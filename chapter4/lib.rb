@@ -1,6 +1,7 @@
+#encoding: UTF-8
 class Tokenizer
   ABBREVIATIONS = %w( Mrs. Dr. Mr. Ms. )
-  PUNCTUATION = %w( . ! ? ,)
+  PUNCTUATION = %w{ . ! ? , }
 
   def tokenize(input)
     abbreviations = ABBREVIATIONS.join('|')

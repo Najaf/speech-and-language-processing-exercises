@@ -1,16 +1,48 @@
 #! /usr/bin/env ruby
 require 'thor'
+require 'progressbar'
 require File.join(File.dirname(__FILE__), 'lib')
 
 
 class App < Thor
-  map '-f' => :fetch_corpus
+  map '-f' => :fetch_corpus, '-n' => :generate_ngrams, '-c' => :clear_ngrams
 
   desc "-f/fetch_corpus", "fetch one million sentences corpus into corpus.txt"
   def fetch_corpus
     `wget http://d3t3fd87rd28b5.cloudfront.net/one_meelyun_sentences.bz2`
     `bzip2 -d one_meelyun_sentences.bz2`
     `mv one_meelyun_sentences corpus.txt`
+  end
+
+  desc '-n/generate_ngrams', "generate unigrams, bigrams, trigrams and 4-grams .txt files in output/directory"
+  def generate_ngrams
+    invoke :clear_ngrams
+    tokenizer = Tokenizer.new
+    filename = 'corpus.txt'
+    line_count = %x{ wc -l #{filename}}.split.first.to_i
+
+    File.open 'corpus.txt', 'r' do |infile|
+      [2,3,4].each do |n|
+        infile.rewind
+        pbar = ProgressBar.new "#{n}-grams", line_count
+        File.open "output/#{n}grams.txt", 'w+' do |outfile|
+          infile.each_line do |line|
+            begin
+              outfile.print(
+                NGrams.ngrams(tokenizer.tokenize(line), n).map { |ngram| ngram.join(" ") + "\n" }.join('')
+              ) 
+              pbar.inc
+            rescue
+            end
+          end
+        end 
+      end
+    end
+  end
+
+  desc '-c/clear_ngrams', 'wipe out generated ngram files'
+  def clear_ngrams
+    `rm output/*grams.txt`
   end
 end
 
